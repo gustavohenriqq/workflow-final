@@ -66,7 +66,7 @@ cd workflow-engine
 
 ```bash
 cd backend
-cp .env.example .env
+cp .env
 ```
 
 Edite o `backend/.env` com suas credenciais:
