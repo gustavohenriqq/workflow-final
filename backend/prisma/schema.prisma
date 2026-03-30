@@ -1,0 +1,290 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl é usado para migrations (bypassa o connection pooler do Supabase)
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  avatarUrl String?  @map("avatar_url")
+  isActive  Boolean  @default(true) @map("is_active")
+  tenantId  String   @map("tenant_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  userRoles         UserRole[]
+  createdWorkflows  WorkflowDefinition[]
+  publishedVersions WorkflowVersion[]    @relation("PublishedBy")
+  startedInstances  WorkflowInstance[]   @relation("StartedBy")
+  assignedSteps     StepExecution[]
+  decisions         Decision[]
+  auditEvents       AuditEvent[]
+  notifications     Notification[]
+  delegatedFrom     StepExecution[]      @relation("DelegatedFrom")
+
+  @@index([tenantId])
+  @@index([email])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  tenantId    String   @map("tenant_id")
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model Permission {
+  id          String  @id @default(uuid())
+  module      String
+  action      String
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+model UserRole {
+  userId    String   @map("user_id")
+  roleId    String   @map("role_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ─────────────────────────────────────────────
+// WORKFLOW DESIGN
+// ─────────────────────────────────────────────
+
+model WorkflowDefinition {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  isArchived  Boolean  @default(false) @map("is_archived")
+  createdById String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy User              @relation(fields: [createdById], references: [id])
+  versions  WorkflowVersion[]
+
+  @@index([tenantId])
+  @@index([createdById])
+  @@map("workflow_definitions")
+}
+
+model WorkflowVersion {
+  id            String                @id @default(uuid())
+  workflowId    String                @map("workflow_id")
+  versionNumber Int                   @map("version_number")
+  status        WorkflowVersionStatus @default(DRAFT)
+  graphJson     Json                  @map("graph_json")
+  changelog     String?
+  publishedAt   DateTime?             @map("published_at")
+  publishedById String?               @map("published_by")
+  createdAt     DateTime              @default(now()) @map("created_at")
+
+  workflow    WorkflowDefinition @relation(fields: [workflowId], references: [id])
+  publishedBy User?              @relation("PublishedBy", fields: [publishedById], references: [id])
+  instances   WorkflowInstance[]
+
+  @@unique([workflowId, versionNumber])
+  @@index([workflowId, status])
+  @@map("workflow_versions")
+}
+
+enum WorkflowVersionStatus {
+  DRAFT
+  PUBLISHED
+  DEPRECATED
+}
+
+// ─────────────────────────────────────────────
+// EXECUTION
+// ─────────────────────────────────────────────
+
+model WorkflowInstance {
+  id                String         @id @default(uuid())
+  workflowVersionId String         @map("workflow_version_id")
+  tenantId          String         @map("tenant_id")
+  title             String
+  status            InstanceStatus @default(RUNNING)
+  contextData       Json           @map("context_data")
+  startedById       String         @map("started_by")
+  startedAt         DateTime       @default(now()) @map("started_at")
+  completedAt       DateTime?      @map("completed_at")
+  currentStepId     String?        @map("current_step_id")
+
+  workflowVersion WorkflowVersion @relation(fields: [workflowVersionId], references: [id])
+  startedBy       User            @relation("StartedBy", fields: [startedById], references: [id])
+  stepExecutions  StepExecution[]
+
+  @@index([workflowVersionId])
+  @@index([tenantId, status])
+  @@index([startedById])
+  @@map("workflow_instances")
+}
+
+enum InstanceStatus {
+  RUNNING
+  COMPLETED
+  REJECTED
+  CANCELLED
+  ESCALATED
+}
+
+model StepExecution {
+  id               String     @id @default(uuid())
+  instanceId       String     @map("instance_id")
+  stepDefinitionId String     @map("step_definition_id")
+  assigneeId       String?    @map("assignee_id")
+  delegatedFromId  String?    @map("delegated_from_id")
+  status           StepStatus @default(PENDING)
+  slaDeadline      DateTime?  @map("sla_deadline")
+  slaJobId         String?    @map("sla_job_id")
+  parallelGroupId  String?    @map("parallel_group_id")
+  startedAt        DateTime   @default(now()) @map("started_at")
+  decidedAt        DateTime?  @map("decided_at")
+
+  instance      WorkflowInstance @relation(fields: [instanceId], references: [id])
+  assignee      User?            @relation(fields: [assigneeId], references: [id])
+  delegatedFrom User?            @relation("DelegatedFrom", fields: [delegatedFromId], references: [id])
+  decisions     Decision[]
+
+  @@index([instanceId])
+  @@index([assigneeId, status])
+  @@index([slaDeadline])
+  @@index([parallelGroupId])
+  @@map("step_executions")
+}
+
+enum StepStatus {
+  PENDING
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+  SKIPPED
+  ESCALATED
+  TIMED_OUT
+}
+
+model Decision {
+  id              String         @id @default(uuid())
+  stepExecutionId String         @map("step_execution_id")
+  actorId         String         @map("actor_id")
+  action          DecisionAction
+  comment         String?
+  evidenceUrls    Json?          @map("evidence_urls")
+  decidedAt       DateTime       @default(now()) @map("decided_at")
+  ipAddress       String?        @map("ip_address")
+  userAgent       String?        @map("user_agent")
+
+  stepExecution StepExecution @relation(fields: [stepExecutionId], references: [id])
+  actor         User          @relation(fields: [actorId], references: [id])
+
+  @@index([stepExecutionId])
+  @@index([actorId])
+  @@index([decidedAt])
+  @@map("decisions")
+}
+
+enum DecisionAction {
+  APPROVE
+  REJECT
+  DELEGATE
+  REQUEST_INFO
+  ESCALATE
+}
+
+// ─────────────────────────────────────────────
+// AUDIT — APPEND ONLY, NEVER DELETE
+// ─────────────────────────────────────────────
+
+model AuditEvent {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  actorId       String?  @map("actor_id")
+  action        String
+  entityType    String   @map("entity_type")
+  entityId      String   @map("entity_id")
+  payloadBefore Json?    @map("payload_before")
+  payloadAfter  Json?    @map("payload_after")
+  metadata      Json?
+  occurredAt    DateTime @default(now()) @map("occurred_at")
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([tenantId, occurredAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@map("audit_events")
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────
+
+model Notification {
+  id         String           @id @default(uuid())
+  userId     String           @map("user_id")
+  tenantId   String           @map("tenant_id")
+  type       NotificationType
+  title      String
+  body       String
+  entityId   String?          @map("entity_id")
+  entityType String?          @map("entity_type")
+  isRead     Boolean          @default(false) @map("is_read")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([tenantId])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  APPROVAL_REQUESTED
+  APPROVED
+  REJECTED
+  SLA_WARNING
+  SLA_EXPIRED
+  DELEGATED
+  ESCALATED
+  INSTANCE_COMPLETED
+}
