@@ -1,0 +1,348 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Color tokens (light mode) ────────────────────────────────────────────── */
+:root {
+  --bg-base:        #FAFAF9;
+  --bg-surface:     #FFFFFF;
+  --bg-raised:      #FFFFFF;
+  --bg-overlay:     #FFFFFF;
+  --bg-subtle:      #F5F5F4;
+  --bg-muted:       #E7E5E4;
+  --bg-input:       #FFFFFF;
+
+  --border-base:    #E7E5E4;
+  --border-strong:  #D6D3D1;
+  --border-input:   #D6D3D1;
+
+  --text-primary:   #1C1917;
+  --text-secondary: #57534E;
+  --text-muted:     #A8A29E;
+  --text-faint:     #D6D3D1;
+  --text-on-dark:   #FFFFFF;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* ─── Color tokens (dark mode) ─────────────────────────────────────────────── */
+.dark {
+  --bg-base:        #0C0A09;
+  --bg-surface:     #1C1917;
+  --bg-raised:      #292524;
+  --bg-overlay:     #292524;
+  --bg-subtle:      #292524;
+  --bg-muted:       #3D3733;
+  --bg-input:       #292524;
+
+  --border-base:    #3D3733;
+  --border-strong:  #57534E;
+  --border-input:   #44403C;
+
+  --text-primary:   #FAFAF9;
+  --text-secondary: #D6D3D1;
+  --text-muted:     #78716C;
+  --text-faint:     #57534E;
+  --text-on-dark:   #FFFFFF;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  color-scheme: dark;
+}
+
+/* ─── Global base styles ────────────────────────────────────────────────────── */
+@layer base {
+  * { box-sizing: border-box; }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: Inter, system-ui, sans-serif;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+}
+
+/* ─── Utility classes using tokens ──────────────────────────────────────────── */
+@layer components {
+
+  /* Surfaces */
+  .surface        { background-color: var(--bg-surface); }
+  .surface-raised { background-color: var(--bg-raised); }
+  .surface-subtle { background-color: var(--bg-subtle); }
+  .surface-muted  { background-color: var(--bg-muted); }
+
+  /* Borders */
+  .border-base   { border-color: var(--border-base); }
+  .border-strong { border-color: var(--border-strong); }
+
+  /* Text */
+  .text-base      { color: var(--text-primary); }
+  .text-sub       { color: var(--text-secondary); }
+  .text-faint     { color: var(--text-muted); }
+
+  /* Card — the universal container */
+  .card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-base);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Input */
+  .input {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-input);
+    color: var(--text-primary);
+    border-radius: 0.375rem;
+    transition: border-color 0.15s;
+  }
+  .input::placeholder { color: var(--text-muted); }
+  .input:focus {
+    outline: none;
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 2px rgba(120,113,108,0.15);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background-color: var(--bg-surface);
+    border-right: 1px solid var(--border-base);
+  }
+
+  /* Nav item */
+  .nav-item {
+    color: var(--text-muted);
+    border-radius: 0.375rem;
+    transition: background-color 0.1s, color 0.1s;
+  }
+  .nav-item:hover {
+    background-color: var(--bg-subtle);
+    color: var(--text-primary);
+  }
+  .nav-item.active {
+    background-color: var(--bg-muted);
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    background-color: rgba(0,0,0,0.45);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Modal panel */
+  .modal-panel {
+    background-color: var(--bg-overlay);
+    border: 1px solid var(--border-base);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Page header */
+  .page-header {
+    background-color: var(--bg-surface);
+    border-bottom: 1px solid var(--border-base);
+  }
+
+  /* Tab button */
+  .tab-btn {
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    transition: color 0.1s, border-color 0.1s;
+  }
+  .tab-btn:hover { color: var(--text-primary); }
+  .tab-btn.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* Status badges — semantic colors stay the same in both modes */
+  .badge-base {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+}
+
+/* ─── React Flow overrides ──────────────────────────────────────────────────── */
+.react-flow__node { font-family: inherit !important; }
+
+.react-flow__edge-path {
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+
+.react-flow__handle {
+  width: 10px !important;
+  height: 10px !important;
+  background: var(--text-muted) !important;
+  border: 2px solid var(--bg-surface) !important;
+}
+.react-flow__handle:hover { background: #3b82f6 !important; }
+
+.react-flow__background svg { background: var(--bg-base) !important; }
+
+.react-flow__controls {
+  box-shadow: var(--shadow-sm);
+}
+.react-flow__controls button {
+  background-color: var(--bg-surface) !important;
+  border-color: var(--border-base) !important;
+  color: var(--text-secondary) !important;
+}
+.react-flow__controls button:hover {
+  background-color: var(--bg-subtle) !important;
+}
+
+.react-flow__minimap {
+  background-color: var(--bg-surface) !important;
+  border: 1px solid var(--border-base);
+  border-radius: 0.5rem;
+}
+
+/* ─── Sonner toast dark mode ────────────────────────────────────────────────── */
+[data-sonner-toast] {
+  background: var(--bg-overlay) !important;
+  border-color: var(--border-base) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ─── Button variants ───────────────────────────────────────────────────────── */
+.btn-primary {
+  background-color: var(--text-primary);
+  color: var(--bg-surface);
+  border: 1px solid var(--text-primary);
+}
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.btn-secondary {
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-base);
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-subtle);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+}
+.btn-ghost:hover:not(:disabled) {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.btn-danger {
+  background-color: #dc2626;
+  color: #ffffff;
+  border: 1px solid #dc2626;
+}
+.btn-danger:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+/* ─── Global Tailwind color overrides using tokens ──────────────────────────
+   These map the most common Tailwind color classes to CSS tokens,
+   so ALL pages automatically get dark mode without touching each file.
+─────────────────────────────────────────────────────────────────────────── */
+
+/* Backgrounds */
+.bg-white, .bg-neutral-50 { background-color: var(--bg-surface) !important; }
+.bg-neutral-100            { background-color: var(--bg-subtle) !important; }
+.bg-neutral-200            { background-color: var(--bg-muted) !important; }
+
+/* Only in dark mode: override body-level neutral backgrounds */
+.dark .bg-white           { background-color: var(--bg-surface) !important; }
+.dark .bg-neutral-50      { background-color: var(--bg-base) !important; }
+
+/* Text */
+.dark .text-neutral-900   { color: var(--text-primary) !important; }
+.dark .text-neutral-800   { color: var(--text-primary) !important; }
+.dark .text-neutral-700   { color: var(--text-secondary) !important; }
+.dark .text-neutral-600   { color: var(--text-secondary) !important; }
+.dark .text-neutral-500   { color: var(--text-muted) !important; }
+.dark .text-neutral-400   { color: var(--text-muted) !important; }
+
+/* Borders */
+.dark .border-neutral-200 { border-color: var(--border-base) !important; }
+.dark .border-neutral-100 { border-color: var(--border-base) !important; }
+.dark .border-neutral-300 { border-color: var(--border-strong) !important; }
+
+/* Hover backgrounds in dark */
+.dark .hover\:bg-neutral-50:hover  { background-color: var(--bg-subtle) !important; }
+.dark .hover\:bg-neutral-100:hover { background-color: var(--bg-muted) !important; }
+
+/* Inputs in dark mode */
+.dark input, .dark select, .dark textarea {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-input) !important;
+  color: var(--text-primary) !important;
+}
+.dark input::placeholder, .dark textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Active nav in dark */
+.dark .bg-neutral-100 { background-color: var(--bg-muted) !important; }
+
+/* Page scrollable areas */
+.dark .flex-1.overflow-y-auto { background-color: var(--bg-base); }
+
+/* Cards in dark */
+.dark .card {
+  background-color: var(--bg-surface) !important;
+  border-color: var(--border-base) !important;
+}
+
+/* Modals in dark */
+.dark .modal-panel, .dark .rounded-xl.border {
+  background-color: var(--bg-overlay) !important;
+  border-color: var(--border-base) !important;
+}
+
+/* Tabs in dark */
+.dark .border-b.border-neutral-200 {
+  border-color: var(--border-base) !important;
+}
+
+/* Metric cards bg in dark */
+.dark .bg-neutral-50 { background-color: var(--bg-subtle) !important; }
+
+/* Font mono in dark */
+.dark .font-mono { color: var(--text-secondary) !important; }
+
+/* Timeline line in dark */
+.dark .bg-neutral-200 { background-color: var(--bg-muted) !important; }
+
+/* SLA progress bars and status colors - keep colored for readability */
+.dark .bg-green-500 { background-color: #22c55e !important; }
+.dark .bg-red-400   { background-color: #f87171 !important; }
+.dark .bg-orange-300 { background-color: #fdba74 !important; }
+
+/* React Flow in dark */
+.dark .react-flow__node > div {
+  background-color: var(--bg-surface) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+}
